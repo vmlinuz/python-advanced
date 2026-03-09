@@ -1,0 +1,70 @@
+[project]
+name = "python-advanced"
+authors = [
+    { name = "Svitlana Sumets" }
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "F401",
+    "I",
+    "W",
+    "A",
+    "ARG",
+    "PLE",
+    "ASYNC",
+    "TID251",
+    "Q",
+]
+ignore = [
+    "E501",
+    "A001",
+    "A002",
+    "A003",
+    "ARG001",
+    "ARG002",
+]
+unfixable = ["B"]
+
+[tool.ruff.lint.isort]
+force-single-line = false
+lines-between-types = 1
+combine-as-imports = true
+order-by-type = false
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+docstring-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F403", "F401"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+follow_imports = "skip"
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+addopts = "-q --maxfail=1"
+testpaths = ["tests"]
