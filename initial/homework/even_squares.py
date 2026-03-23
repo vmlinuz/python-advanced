@@ -39,4 +39,3 @@ def even_squares(numbers: list[int]) -> list[int]:
     2. Space complexity: O(n), because a new result list is created.
     """
     return list(map(lambda x: x * x, filter(lambda x: x % 2 == 0, numbers)))
-/
