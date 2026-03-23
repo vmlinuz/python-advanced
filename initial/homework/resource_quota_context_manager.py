@@ -40,28 +40,36 @@ from typing import Type
 
 class ResourceQuota:
     def __init__(self, total_limit: int):
-        # TODO: initialize total limit and current usage (call the variable 'used')
-        ...
+        self.total_limit = total_limit
+        self.used = 0
 
     def request(self, amount: int) -> '_QuotaContext':
-        # TODO: return a context manager instance
-        ...
+        return _QuotaContext(self, amount)
 
 
 class _QuotaContext:
     def __init__(self, quota: ResourceQuota, amount: int):
-        # TODO: store quota reference and requested amount
-        ...
+        self.quota = quota
+        self.amount = amount
+        self._reserved = False
 
     def __enter__(self) -> int:
-        # TODO: reserve resource or raise ValueError
-        ...
+        if self.amount < 0:
+            raise ValueError("Requested amount must be non-negative")
+
+        if self.quota.used + self.amount > self.quota.total_limit:
+            raise ValueError("Not enough resource available")
+
+        self.quota.used += self.amount
+        self._reserved = True
+        return self.amount
 
     def __exit__(
-        self,
-        exc_type: Type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
+            self,
+            exc_type: Type[BaseException] | None,
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None,
     ):
-        # TODO: release resource
-        ...
+        if self._reserved:
+            self.quota.used -= self.amount
+            self._reserved = False
