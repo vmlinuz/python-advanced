@@ -32,5 +32,10 @@ from typing import Generator
 
 
 def generate_numbers(n: int) -> Generator[int, None, None]:
-    # TODO: implement generator logic
-    ...
+    """
+    1. Time complexity: O(n), since the range from 0 to n is traversed only once.
+    2. Memory complexity: O(1), since the generator creates values individually and does not store everything.
+    """
+    for number in range(0, n + 1):
+        if number % 5 == 0 and number % 7 == 0:
+            yield number
