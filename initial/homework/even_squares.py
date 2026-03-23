@@ -34,5 +34,9 @@
 
 
 def even_squares(numbers: list[int]) -> list[int]:
-    # TODO: implement using map() and filter()
-    ...
+    """
+    1. Time complexity: O(n), because `filter()` and `map()` traverse the input list linearly.
+    2. Space complexity: O(n), because a new result list is created.
+    """
+    return list(map(lambda x: x * x, filter(lambda x: x % 2 == 0, numbers)))
+/
