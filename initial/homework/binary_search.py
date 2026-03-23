@@ -37,10 +37,8 @@
 
 def binary_search(data: list[int], target: int) -> int:
     """
-
-    :param data:
-    :param target:
-    :return:
+    1. Time complexity: O(log n), since the search space is divided in half at each iteration.
+    2. Space complexity: O(1), since only a fixed number of variables are used.
     """
     left, right = 0, len(data) - 1
 
