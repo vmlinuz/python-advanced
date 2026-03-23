@@ -36,5 +36,16 @@
 
 
 def solve_heads_and_legs(num_heads: int, num_legs: int) -> tuple[int, int]:
-    # TODO: implement solution
-    ...
+    """
+    1. Time complexity: `O(n)`, where `n` is the number of heads, because one `for` loop is executed to iterate over the possible options.
+    2. Space complexity: `O(1)`, because a constant number of additional variables are used.
+    """
+    if num_heads < 0 or num_legs < 0:
+        return -1, -1
+
+    for rabbits in range(num_heads + 1):
+        chickens = num_heads - rabbits
+        if chickens * 2 + rabbits * 4 == num_legs:
+            return chickens, rabbits
+
+    return -1, -1
