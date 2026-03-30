@@ -45,13 +45,30 @@
 
 class Allocator:
     def __init__(self, n: int):
-        # TODO: implement solution
-        ...
+        self._container = [0] * n
 
     def allocate(self, size: int, alloc_id: int) -> int:
-        # TODO: implement solution
-        ...
+        if size <= 0 or size > len(self._container) or alloc_id <= 0:
+            return -1
+
+        consecutive_free_blocks = 0
+        for current_index in range(len(self._container)):
+            if self._container[current_index] == 0:
+                consecutive_free_blocks += 1
+            else:
+                consecutive_free_blocks = 0
+
+            if consecutive_free_blocks == size:
+                start_index = current_index - size + 1
+                for block_index in range(start_index, current_index + 1):
+                    self._container[block_index] = alloc_id
+                return start_index
+        return -1
 
     def free_memory(self, alloc_id: int) -> int:
-        # TODO: implement solution
-        ...
+        freed_count = 0
+        for current_index in range(len(self._container)):
+            if self._container[current_index] == alloc_id:
+                self._container[current_index] = 0
+                freed_count += 1
+        return freed_count
