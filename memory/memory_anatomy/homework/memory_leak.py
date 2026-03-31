@@ -41,7 +41,20 @@
     навичка для backend, systems та performance інженерів.
 """
 
-
 def simulate_memory_leak(memory1: int, memory2: int) -> list[int]:
-    # TODO: implement solution
-    ...
+    if memory1 < 0 or memory2 < 0:
+        raise ValueError("memory1 and memory2 should be >= 0")
+
+    step = 1
+
+    while True:
+        if memory1 >= memory2:
+            if memory1 < step:
+                return [step, memory1, memory2]
+            memory1 -= step
+        else:
+            if memory2 < step:
+                return [step, memory1, memory2]
+            memory2 -= step
+
+        step += 1
