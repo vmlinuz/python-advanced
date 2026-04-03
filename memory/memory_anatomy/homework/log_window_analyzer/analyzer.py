@@ -76,8 +76,8 @@ class LogWindowAnalyzer:
         """
         Відкрити файл та передати файловий потік у метод _process_stream.
         """
-        # TODO: implement solution
-        ...
+        with path.open("r", encoding="utf-8", errors="replace") as f:
+            return self._process_stream(f)
 
     def _process_stream(self, stream: TextIO) -> WindowResult:
         """
@@ -94,8 +94,39 @@ class LogWindowAnalyzer:
             - не створювати зайві списки;
             - мінімізувати кількість алокацій.
         """
-        # TODO: implement solution
-        ...
+        self._processed_sliding_window_rows = 0
+        self._current_window_sum = 0
+        self._max_window_sum = 0
+        processed_rows = 0
+
+        for line in stream:
+            line = line.strip()
+            if not line:
+                continue
+
+            duration = self._parse_duration(line)
+            self._process_duration(duration)
+            processed_rows += 1
+
+        return WindowResult(self._max_window_sum, self._window_size, processed_rows)
+
+    @staticmethod
+    def _parse_last_int(s: str, delim: str = ";") -> int:
+        if delim not in s:
+            raise ValueError("delimiter not found")
+
+        i = s.rfind(delim)
+        if i + 1 >= len(s):
+            raise ValueError("no integer after delimiter")
+
+        n = 0
+        for j in range(i + 1, len(s)):
+            d = ord(s[j]) - ord("0")
+            if d < 0 or d > 9:
+                raise ValueError(f"non-digit character: {s[j]!r}")
+            n = n * 10 + d
+
+        return n
 
     @staticmethod
     def _parse_duration(line: str) -> int:
@@ -106,8 +137,35 @@ class LogWindowAnalyzer:
         Заборонено:
             - використовувати split(), щоб уникнути зайвих алокацій.
         """
-        # TODO: implement solution
-        ...
+        return LogWindowAnalyzer._parse_last_int(line)
+
+    def _process_duration(self, duration: int) -> None:
+        """
+        Оновити стан ковзного вікна для нового значення duration.
+        Метод має підтримувати ковзне вікно розміру self._window_size та знайти максимальну суму duration у цьому вікні.
+        """
+        if self._processed_sliding_window_rows == 0:
+            self._window_values = [0] * self._window_size
+            self._window_index = 0
+
+        if self._processed_sliding_window_rows < self._window_size:
+            self._window_values[self._window_index] = duration
+            self._current_window_sum += duration
+            self._processed_sliding_window_rows += 1
+        else:
+            old_duration = self._window_values[self._window_index]
+            self._window_values[self._window_index] = duration
+            self._current_window_sum += duration - old_duration
+
+        self._window_index += 1
+        if self._window_index == self._window_size:
+            self._window_index = 0
+
+        if (
+                self._processed_sliding_window_rows == self._window_size
+                and self._current_window_sum > self._max_window_sum
+        ):
+            self._max_window_sum = self._current_window_sum
 
 
 def main() -> None:
