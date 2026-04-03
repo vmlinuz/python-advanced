@@ -52,9 +52,8 @@ def call_counter(func: Callable) -> Callable:
     def wrapper(*args, **kwargs):
         nonlocal calls
         calls += 1
-        wrapper.calls = calls
+        setattr(wrapper, 'calls', calls)
         return func(*args, **kwargs)
 
-    wrapper.calls = calls
+    setattr(wrapper, 'calls', calls)
     return wrapper
-

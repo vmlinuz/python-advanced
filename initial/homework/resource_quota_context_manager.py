@@ -55,20 +55,20 @@ class _QuotaContext:
 
     def __enter__(self) -> int:
         if self.amount < 0:
-            raise ValueError("Requested amount must be non-negative")
+            raise ValueError('Requested amount must be non-negative')
 
         if self.quota.used + self.amount > self.quota.total_limit:
-            raise ValueError("Not enough resource available")
+            raise ValueError('Not enough resource available')
 
         self.quota.used += self.amount
         self._reserved = True
         return self.amount
 
     def __exit__(
-            self,
-            exc_type: Type[BaseException] | None,
-            exc_val: BaseException | None,
-            exc_tb: TracebackType | None,
+        self,
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ):
         if self._reserved:
             self.quota.used -= self.amount

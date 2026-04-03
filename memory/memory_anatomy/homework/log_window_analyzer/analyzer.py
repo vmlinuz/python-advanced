@@ -76,7 +76,7 @@ class LogWindowAnalyzer:
         """
         Відкрити файл та передати файловий потік у метод _process_stream.
         """
-        with path.open("r", encoding="utf-8", errors="replace") as f:
+        with path.open('r', encoding='utf-8', errors='replace') as f:
             return self._process_stream(f)
 
     def _process_stream(self, stream: TextIO) -> WindowResult:
@@ -111,19 +111,19 @@ class LogWindowAnalyzer:
         return WindowResult(self._max_window_sum, self._window_size, processed_rows)
 
     @staticmethod
-    def _parse_last_int(s: str, delim: str = ";") -> int:
+    def _parse_last_int(s: str, delim: str = ';') -> int:
         if delim not in s:
-            raise ValueError("delimiter not found")
+            raise ValueError('delimiter not found')
 
         i = s.rfind(delim)
         if i + 1 >= len(s):
-            raise ValueError("no integer after delimiter")
+            raise ValueError('no integer after delimiter')
 
         n = 0
         for j in range(i + 1, len(s)):
-            d = ord(s[j]) - ord("0")
+            d = ord(s[j]) - ord('0')
             if d < 0 or d > 9:
-                raise ValueError(f"non-digit character: {s[j]!r}")
+                raise ValueError(f'non-digit character: {s[j]!r}')
             n = n * 10 + d
 
         return n
@@ -161,10 +161,7 @@ class LogWindowAnalyzer:
         if self._window_index == self._window_size:
             self._window_index = 0
 
-        if (
-                self._processed_sliding_window_rows == self._window_size
-                and self._current_window_sum > self._max_window_sum
-        ):
+        if self._processed_sliding_window_rows == self._window_size and self._current_window_sum > self._max_window_sum:
             self._max_window_sum = self._current_window_sum
 
 
