@@ -22,7 +22,7 @@
 import json
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Iterable, Iterator
 
 from memory.fragments_and_copies.homework import fake_boto3
 
@@ -53,26 +53,18 @@ class EventAggregator:  # <- Залиш назву незмінною
         return all_events
 
     @staticmethod
-    def normalize_events(events: list[dict]) -> list[dict]:
-        result = []
-
+    def normalize_events(events: list[dict]) -> Iterator[dict]:
         for event in events:
-            event['timestamp'] = datetime.fromisoformat(event['timestamp']).timestamp()
-
-            result.append(
-                {
-                    'user_id': event['user_id'],
-                    'event': event['event'],
-                    'value': event.get('value'),
-                    'timestamp': event['timestamp'],
-                    'extra': {},
-                }
-            )
-
-        return result
+            yield {
+                'user_id': event['user_id'],
+                'event': event['event'],
+                'value': event.get('value'),
+                'timestamp': datetime.fromisoformat(event['timestamp']).timestamp(),
+                'extra': {},
+            }
 
     @staticmethod
-    def merge_by_user(events: list[dict]) -> dict:
+    def merge_by_user(events: Iterable[dict[str, Any]]) -> dict:
         merged: dict[Any, dict[str, Any]] = {}
 
         for event in events:
@@ -86,15 +78,11 @@ class EventAggregator:  # <- Залиш назву незмінною
         return merged
 
     @staticmethod
-    def build_payload(merged: dict) -> list[dict]:
-        payload = []
-
+    def build_payload(merged: dict) -> Iterator[dict]:
         for user, data in merged.items():
-            payload.append({'user': user, 'count': len(data['events']), 'events': data['events']})
+            yield {'user': user, 'count': len(data['events']), 'events': data['events']}
 
-        return payload
-
-    def run(self) -> list[dict]:  # <- метод run має бути наявним у класі, вміст можна змінювати за потреби
+    def run(self) -> Iterator[dict]:  # <- метод run має бути наявним у класі, вміст можна змінювати за потреби
         events = self.load_all_files()
         normalized = self.normalize_events(events)
         merged = self.merge_by_user(normalized)
