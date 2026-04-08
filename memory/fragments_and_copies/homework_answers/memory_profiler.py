@@ -2,9 +2,10 @@ import os
 import time
 import tracemalloc
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Iterator
 
 import psutil
 
@@ -17,6 +18,14 @@ class MemoryMetrics:
     rss_start_mb: float
     rss_end_mb: float
     rss_delta_mb: float
+
+
+@dataclass
+class ProfilingSession:
+    process: psutil.Process
+    rss_start: int
+    snap_start: tracemalloc.Snapshot
+    t0: float
 
 
 @dataclass
@@ -43,7 +52,10 @@ class MemoryInspector:
     def take_snapshot() -> tracemalloc.Snapshot:
         return tracemalloc.take_snapshot()
 
-    def extract(self, stats: Iterable[tracemalloc.Statistic]) -> list[AllocationRecord]:
+    def extract(
+        self,
+        stats: Iterable[tracemalloc.Statistic | tracemalloc.StatisticDiff],
+    ) -> list[AllocationRecord]:
         conclusions: list[AllocationRecord] = []
 
         for stat in stats:
@@ -112,37 +124,37 @@ class MemoryProfiler:
         self.printer = MemoryPrinter()
         self.top_n = top_n
 
-    def __call__(self, func: Callable) -> Callable:
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            process = psutil.Process(os.getpid())
+    @contextmanager
+    def _profiling_session(self) -> Iterator[ProfilingSession]:
+        process = psutil.Process(os.getpid())
 
-            print(f'MEMORY PROFILING: {func.__name__}')
-            print('-' * 70)
+        tracemalloc.start()
+        session = ProfilingSession(
+            process=process,
+            rss_start=process.memory_info().rss,
+            snap_start=self.inspector.take_snapshot(),
+            t0=time.perf_counter(),
+        )
 
-            tracemalloc.start()
-            rss_start = process.memory_info().rss
-            snap_start = self.inspector.take_snapshot()
-            t0 = time.perf_counter()
-
-            result = func(*args, **kwargs)
-
+        try:
+            yield session
+        finally:
             t1 = time.perf_counter()
             snap_end = self.inspector.take_snapshot()
             python_current, python_peak = tracemalloc.get_traced_memory()
-            rss_end = process.memory_info().rss
+            rss_end = session.process.memory_info().rss
             tracemalloc.stop()
 
             metrics = MemoryMetrics(
-                exec_time_sec=t1 - t0,
+                exec_time_sec=t1 - session.t0,
                 python_current_mb=python_current / 1024 / 1024,
                 python_peak_mb=python_peak / 1024 / 1024,
-                rss_start_mb=rss_start / 1024 / 1024,
+                rss_start_mb=session.rss_start / 1024 / 1024,
                 rss_end_mb=rss_end / 1024 / 1024,
-                rss_delta_mb=(rss_end - rss_start) / 1024 / 1024,
+                rss_delta_mb=(rss_end - session.rss_start) / 1024 / 1024,
             )
 
-            diff_stats = snap_end.compare_to(snap_start, 'lineno')
+            diff_stats = snap_end.compare_to(session.snap_start, 'lineno')
             top_stats = snap_end.statistics('lineno')
 
             diff = self.inspector.extract(diff_stats)
@@ -151,6 +163,15 @@ class MemoryProfiler:
             self.printer.print_metrics(metrics)
             self.printer.print_allocations('DIFF ALLOCATIONS', diff, self.top_n)
             self.printer.print_allocations('TOP LINES BY ALLOCATED MEMORY', top, self.top_n)
+
+    def __call__(self, func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            print(f'MEMORY PROFILING: {func.__name__}')
+            print('-' * 70)
+
+            with self._profiling_session():
+                result = func(*args, **kwargs)
 
             return result
 

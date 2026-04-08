@@ -2,7 +2,7 @@ import sys
 
 from pympler import asizeof
 
-from memory.c_based_concepts.homework_answers.byte_slice import ByteSlice
+from memory.c_based_concepts.homework.byte_slice import ByteSlice
 
 
 class TestByteSlice:

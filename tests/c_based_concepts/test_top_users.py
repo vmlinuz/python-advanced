@@ -3,7 +3,7 @@ import tempfile
 
 from unittest import TestCase
 
-from memory.c_based_concepts.homework_answers.top_users import top_users
+from memory.c_based_concepts.homework.top_users import top_users
 
 
 class TestTopUsers(TestCase):

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from memory.c_based_concepts.homework_answers.brc.dask_aggregator import DaskMeasurementsAggregator, StationStats
+from memory.c_based_concepts.homework.brc.dask_aggregator import DaskMeasurementsAggregator, StationStats
 
 
 class TestStationStats:

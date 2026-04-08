@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from memory.c_based_concepts.homework_answers.brc.pandas_aggregator import PandasMeasurementsAggregator, StationStats
+from memory.c_based_concepts.homework.brc.pandas_aggregator import PandasMeasurementsAggregator, StationStats
 
 
 class TestStationStats:
