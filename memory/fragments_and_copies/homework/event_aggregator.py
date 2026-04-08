@@ -19,10 +19,10 @@
     практичне розуміння методів мінімізації алокацій та роботи зі структурами даних у Python.
 """
 
-import copy
 import json
 
 from datetime import datetime
+from typing import Any
 
 from memory.fragments_and_copies.homework import fake_boto3
 
@@ -54,19 +54,17 @@ class EventAggregator:  # <- Залиш назву незмінною
 
     @staticmethod
     def normalize_events(events: list[dict]) -> list[dict]:
-        normalized = copy.deepcopy(events)
         result = []
 
-        for event in normalized:
-            event_copy = event.copy()
-            event_copy['timestamp'] = datetime.fromisoformat(event_copy['timestamp']).timestamp()
+        for event in events:
+            event['timestamp'] = datetime.fromisoformat(event['timestamp']).timestamp()
 
             result.append(
                 {
-                    'user_id': event_copy['user_id'],
-                    'event': event_copy['event'],
-                    'value': event_copy.get('value'),
-                    'timestamp': event_copy['timestamp'],
+                    'user_id': event['user_id'],
+                    'event': event['event'],
+                    'value': event.get('value'),
+                    'timestamp': event['timestamp'],
                     'extra': {},
                 }
             )
@@ -75,7 +73,7 @@ class EventAggregator:  # <- Залиш назву незмінною
 
     @staticmethod
     def merge_by_user(events: list[dict]) -> dict:
-        merged = {}
+        merged: dict[Any, dict[str, Any]] = {}
 
         for event in events:
             user = event['user_id']
@@ -83,7 +81,7 @@ class EventAggregator:  # <- Залиш назву незмінною
             if user not in merged:
                 merged[user] = {'events': [], 'meta': {}}
 
-            merged[user]['events'].append(event.copy())
+            merged[user]['events'].append(event)
 
         return merged
 
@@ -92,9 +90,7 @@ class EventAggregator:  # <- Залиш назву незмінною
         payload = []
 
         for user, data in merged.items():
-            events_copy = [copy.deepcopy(e) for e in data['events']]
-
-            payload.append({'user': user, 'count': len(events_copy), 'events': events_copy})
+            payload.append({'user': user, 'count': len(data['events']), 'events': data['events']})
 
         return payload
 
