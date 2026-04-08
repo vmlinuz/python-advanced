@@ -22,7 +22,6 @@
 import json
 
 from datetime import datetime
-from typing import Any, Iterable, Iterator
 
 from memory.fragments_and_copies.homework import fake_boto3
 
@@ -34,13 +33,14 @@ class EventAggregator:  # <- Залиш назву незмінною
 
         self.s3 = fake_boto3.client('s3')
 
-    def load_all_files(self) -> list[dict]:
+    def run(self) -> list[dict]:  # <- метод run має бути наявним у класі, вміст можна змінювати за потреби
         objects = self.s3.list_objects_v2(
             Bucket=self.bucket,
             Prefix=self.prefix,
         )['Contents']
 
-        all_events = []
+        payload_by_user: dict[str, dict] = {}
+
         for obj in objects:
             raw = self.s3.get_object(
                 Bucket=self.bucket,
@@ -48,44 +48,18 @@ class EventAggregator:  # <- Залиш назву незмінною
             )['Body'].read()
 
             events = json.loads(raw)
-            all_events.extend(events)
 
-        return all_events
+            for event in events:
+                event['timestamp'] = datetime.fromisoformat(event['timestamp']).timestamp()
+                event.setdefault('extra', {})
 
-    @staticmethod
-    def normalize_events(events: list[dict]) -> Iterator[dict]:
-        for event in events:
-            yield {
-                'user_id': event['user_id'],
-                'event': event['event'],
-                'value': event.get('value'),
-                'timestamp': datetime.fromisoformat(event['timestamp']).timestamp(),
-                'extra': {},
-            }
+                user = event['user_id']
+                rec = payload_by_user.get(user)
+                if rec is None:
+                    rec = {'user': user, 'count': 0, 'events': []}
+                    payload_by_user[user] = rec
 
-    @staticmethod
-    def merge_by_user(events: Iterable[dict[str, Any]]) -> dict:
-        merged: dict[Any, dict[str, Any]] = {}
+                rec['events'].append(event)
+                rec['count'] += 1
 
-        for event in events:
-            user = event['user_id']
-
-            if user not in merged:
-                merged[user] = {'events': [], 'meta': {}}
-
-            merged[user]['events'].append(event)
-
-        return merged
-
-    @staticmethod
-    def build_payload(merged: dict) -> Iterator[dict]:
-        for user, data in merged.items():
-            yield {'user': user, 'count': len(data['events']), 'events': data['events']}
-
-    def run(self) -> Iterator[dict]:  # <- метод run має бути наявним у класі, вміст можна змінювати за потреби
-        events = self.load_all_files()
-        normalized = self.normalize_events(events)
-        merged = self.merge_by_user(normalized)
-        payload = self.build_payload(merged)
-
-        return payload
+        return list(payload_by_user.values())
