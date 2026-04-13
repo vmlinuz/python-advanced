@@ -78,22 +78,24 @@ class StationStats:
         Створює початкову статистику для нової станції.
         Використовуйте передане значення температури як перший вимір.
         """
-        # TODO: implement solution
-        ...
+        return cls(min_value=value, max_value=value, sum_value=value, count=1)
 
     def add(self, value: float) -> None:
         """
         Додає нове температурне значення до статистики станції.
         """
-        # TODO: implement solution
-        ...
+        if value < self.min_value:
+            self.min_value = value
+        if value > self.max_value:
+            self.max_value = value
+        self.sum_value += value
+        self.count += 1
 
     def mean(self) -> float:
         """
         Повертає середнє значення температури для станції.
         """
-        # TODO: implement solution
-        ...
+        return self.sum_value / self.count
 
 
 class MeasurementsAggregator:
@@ -101,15 +103,14 @@ class MeasurementsAggregator:
         """
         Ініціалізує структуру для збереження статистики по станціях.
         """
-        # TODO: implement solution
-        ...
+        self.stats: dict[str, StationStats] = {}
 
     def process_file(self, path: str) -> None:
         """
         Відкриває файл з вимірюваннями та передає його у потокову обробку.
         """
-        # TODO: implement solution
-        ...
+        with open(path, encoding='utf-8') as f:
+            self._process_stream(f)
 
     def _process_stream(self, stream: TextIO) -> None:
         """
@@ -118,8 +119,19 @@ class MeasurementsAggregator:
         Кожен рядок має формат:
             <station>;<temperature>
         """
-        # TODO: implement solution
-        ...
+        stats = self.stats
+        for line in stream:
+            line = line.strip()
+            if not line:
+                continue
+            sep = line.index(';')
+            station = line[:sep]
+            value = float(line[sep + 1 :])
+            entry = stats.get(station)
+            if entry is None:
+                stats[station] = StationStats.create(value)
+            else:
+                entry.add(value)
 
     def render_sorted(self) -> dict[str, str]:
         """
@@ -132,8 +144,9 @@ class MeasurementsAggregator:
         - повернути словник:
               station -> "min_value/mean/max_value"
         """
-        # TODO: implement solution
-        ...
+        return {
+            station: f'{s.min_value:.1f}/{s.mean():.1f}/{s.max_value:.1f}' for station, s in sorted(self.stats.items())
+        }
 
 
 def main():
