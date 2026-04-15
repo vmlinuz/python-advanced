@@ -72,8 +72,17 @@ class ByteSlice:
         Має створювати memoryview(data) та зберігати тільки вказівники.
         Не повинно бути жодних копій даних.
         """
-        # TODO: implement solution
-        ...
+        if isinstance(data, memoryview):
+            # Повторно використовуємо існуючий memoryview (zero-copy)
+            self._buffer: memoryview = data
+        else:
+            # Створюємо memoryview поверх bytes/bytearray — без копій
+            self._buffer = memoryview(data)
+
+        # Обмежуємо межі довжиною буфера
+        buf_len = len(self._buffer)
+        self._start: int = max(0, min(start, buf_len))
+        self._end: int = max(self._start, min(buf_len, end if end is not None else buf_len))
 
     def __len__(self) -> int:
         """
@@ -81,8 +90,7 @@ class ByteSlice:
 
         Має бути O(1).
         """
-        # TODO: implement solution
-        ...
+        return self._end - self._start
 
     def __getitem__(self, item: int | slice) -> int | ByteSlice:
         """
@@ -96,8 +104,23 @@ class ByteSlice:
 
         Заборонено робити копії bytes.
         """
-        # TODO: implement solution
-        ...
+        if isinstance(item, int):
+            # Підтримка негативних індексів
+            length = len(self)
+            if item < 0:
+                item += length
+            if item < 0 or item >= length:
+                raise IndexError(f'ByteSlice index {item} out of range for length {length}')
+            # Читаємо один байт за абсолютним зміщенням у буфері
+            return self._buffer[self._start + item]
+
+        if isinstance(item, slice):
+            # indices() коректно обробляє None, негативні значення та крок
+            start, stop, _step = item.indices(len(self))
+            # Перераховуємо у абсолютні координати буфера
+            return ByteSlice(self._buffer, self._start + start, self._start + stop)
+
+        raise TypeError(f'ByteSlice indices must be integers or slices, not {type(item).__name__}')
 
     def __iter__(self) -> Iterator[int]:
         """
@@ -105,8 +128,9 @@ class ByteSlice:
 
         Повертати int для кожного байта.
         """
-        # TODO: implement solution
-        ...
+        buf = self._buffer
+        for i in range(self._start, self._end):
+            yield buf[i]
 
     def __bytes__(self) -> bytes:
         """
@@ -114,8 +138,7 @@ class ByteSlice:
 
         Єдиний дозволений спосіб створення bytes-обʼєкта всередині класу.
         """
-        # TODO: implement solution
-        ...
+        return bytes(self._buffer[self._start : self._end])
 
     def to_bytes(self) -> bytes:
         """
@@ -123,13 +146,14 @@ class ByteSlice:
 
         Можна викликати руками - повинен повертати копію вмісту ByteSlice.
         """
-        # TODO: implement solution
-        ...
+        return bytes(self)
 
     def __repr__(self) -> str:
         """
         Повернути зручне текстове представлення.
         Має бути корисно для дебагу.
         """
-        # TODO: implement solution
-        ...
+        # Обмежуємо превʼю, щоб repr не був завеликим
+        preview_end = min(self._start + 20, self._end)
+        preview = bytes(self._buffer[self._start : preview_end])
+        return f'ByteSlice(len={len(self)}, start={self._start}, preview={preview!r})'
