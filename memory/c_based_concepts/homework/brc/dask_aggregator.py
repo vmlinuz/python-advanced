@@ -58,6 +58,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+import dask.dataframe as dd
+
 
 @dataclass(slots=True)
 class StationStats:
@@ -70,8 +72,7 @@ class StationStats:
         """
         Повертає середнє значення температури.
         """
-        # TODO: implement solution
-        ...
+        return self.sum_value / self.count
 
 
 class DaskMeasurementsAggregator:
@@ -80,8 +81,9 @@ class DaskMeasurementsAggregator:
         Ініціалізує агрегатор.
         chunk_size: розмір partition для читання CSV.
         """
-        # TODO: implement solution
-        ...
+        self._chunk_size = chunk_size
+        # Словник станція -> агреговані статистики
+        self._stats: dict[str, StationStats] = {}
 
     def process_file(self, path: Path) -> None:
         """
@@ -91,8 +93,27 @@ class DaskMeasurementsAggregator:
         2. Виконати агрегацію df.groupby;
         3. Викликати compute(), щоб отримати pandas DataFrame.
         """
-        # TODO: implement solution
-        ...
+        # Лінивe читання CSV з розбиттям на партиції
+        df = dd.read_csv(
+            path,
+            sep=';',
+            header=None,
+            names=['station', 'temperature'],
+            blocksize=self._chunk_size,
+            engine='pyarrow',
+        )
+
+        # Групування та агрегація — обчислення відбувається лише при compute()
+        agg = df.groupby('station')['temperature'].agg(['min', 'max', 'sum', 'count']).compute()
+
+        # Перетворюємо pandas DataFrame у словник StationStats
+        for station, row in agg.iterrows():
+            self._stats[station] = StationStats(
+                min_value=float(row['min']),
+                max_value=float(row['max']),
+                sum_value=float(row['sum']),
+                count=int(row['count']),
+            )
 
     def render_sorted(self) -> dict[str, str]:
         """
@@ -102,8 +123,7 @@ class DaskMeasurementsAggregator:
             - обчислити mean через StationStats.mean();
             - сформувати рядок "min_value/mean/max_value".
         """
-        # TODO: implement solution
-        ...
+        return {station: f'{s.min_value}/{s.mean()}/{s.max_value}' for station, s in sorted(self._stats.items())}
 
 
 def main():
