@@ -98,24 +98,26 @@ class PandasMeasurementsAggregator:
         4. Виконати фінальну агрегацію groupby(level=0).
         """
         # Читаємо CSV частинами, використовуючи C engine
-        reader = pd.read_csv(
+        partials: list[pd.DataFrame] = []
+
+        with pd.read_csv(
             path,
             sep=';',
             header=None,
             names=['station', 'temperature'],
             engine='c',
             chunksize=self.chunk_size,
-        )
+        ) as reader:
+            for chunk in reader:
+                # Локальна агрегація для кожного chunk-а
+                agg = chunk.groupby('station')['temperature'].agg(['min', 'max', 'sum', 'count'])
+                partials.append(agg)
 
-        partials: list[pd.DataFrame] = []
-
-        for chunk in reader:
-            # Локальна агрегація для кожного chunk-а
-            agg = chunk.groupby('station')['temperature'].agg(['min', 'max', 'sum', 'count'])
-            partials.append(agg)
+        if not partials:
+            return
 
         # Об'єднуємо проміжні результати та виконуємо фінальну агрегацію
-        combined = pd.concat(partials)
+        combined = pd.concat(partials, copy=False)
         final = combined.groupby(level=0).agg(
             {
                 'min': 'min',
@@ -126,13 +128,14 @@ class PandasMeasurementsAggregator:
         )
 
         # Зберігаємо результат у словник StationStats
-        for station, row in final.iterrows():
-            self._stats[str(station)] = StationStats(
-                min_value=row['min'],
-                max_value=row['max'],
-                sum_value=row['sum'],
-                count=int(row['count']),
-            )
+        mins = final['min'].to_dict()
+        maxs = final['max'].to_dict()
+        sums = final['sum'].to_dict()
+        counts = final['count'].to_dict()
+        self._stats = {
+            st: StationStats(min_value=mins[st], max_value=maxs[st], sum_value=sums[st], count=int(counts[st]))
+            for st in mins
+        }
 
     def render_sorted(self) -> dict[str, str]:
         """
@@ -142,7 +145,11 @@ class PandasMeasurementsAggregator:
             - порахувати mean через StationStats.mean();
             - сформувати рядок "min_value/mean/max_value".
         """
-        return {station: f'{s.min_value}/{s.mean()}/{s.max_value}' for station, s in sorted(self._stats.items())}
+        return {
+            station: f'{s.min_value:.1f}/{s.mean():.1f}/{s.max_value:.1f}'
+            for station, s in sorted(self._stats.items())
+            if s.count > 0
+        }
 
 
 def main():
