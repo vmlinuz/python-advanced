@@ -72,6 +72,8 @@ class StationStats:
         """
         Повертає середнє значення температури.
         """
+        if self.count == 0:
+            raise ZeroDivisionError('Cannot compute mean when count is 0.')
         return self.sum_value / self.count
 
 
@@ -123,7 +125,9 @@ class DaskMeasurementsAggregator:
             - обчислити mean через StationStats.mean();
             - сформувати рядок "min_value/mean/max_value".
         """
-        return {station: f'{s.min_value}/{s.mean()}/{s.max_value}' for station, s in sorted(self._stats.items())}
+        return {
+            station: f'{s.min_value:.1f}/{s.mean():.1f}/{s.max_value:.1f}' for station, s in sorted(self._stats.items())
+        }
 
 
 def main():
