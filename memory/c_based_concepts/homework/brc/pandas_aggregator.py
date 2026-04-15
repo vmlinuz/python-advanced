@@ -61,6 +61,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+import pandas as pd
+
 
 @dataclass(slots=True)
 class StationStats:
@@ -73,8 +75,7 @@ class StationStats:
         """
         Повертає середнє значення температури.
         """
-        # TODO: implement solution
-        ...
+        return self.sum_value / self.count
 
 
 class PandasMeasurementsAggregator:
@@ -83,8 +84,9 @@ class PandasMeasurementsAggregator:
         Ініціалізує агрегатор.
         chunk_size: кількість рядків, які читаються за один chunk.
         """
-        # TODO: implement solution
-        ...
+        self.chunk_size = chunk_size
+        # Словник із проміжною статистикою по кожній станції
+        self._stats: dict[str, StationStats] = {}
 
     def process_file(self, path: Path) -> None:
         """
@@ -95,8 +97,42 @@ class PandasMeasurementsAggregator:
         3. Об'єднати всі partial results через pd.concat().
         4. Виконати фінальну агрегацію groupby(level=0).
         """
-        # TODO: implement solution
-        ...
+        # Читаємо CSV частинами, використовуючи C engine
+        reader = pd.read_csv(
+            path,
+            sep=';',
+            header=None,
+            names=['station', 'temperature'],
+            engine='c',
+            chunksize=self.chunk_size,
+        )
+
+        partials: list[pd.DataFrame] = []
+
+        for chunk in reader:
+            # Локальна агрегація для кожного chunk-а
+            agg = chunk.groupby('station')['temperature'].agg(['min', 'max', 'sum', 'count'])
+            partials.append(agg)
+
+        # Об'єднуємо проміжні результати та виконуємо фінальну агрегацію
+        combined = pd.concat(partials)
+        final = combined.groupby(level=0).agg(
+            {
+                'min': 'min',
+                'max': 'max',
+                'sum': 'sum',
+                'count': 'sum',
+            }
+        )
+
+        # Зберігаємо результат у словник StationStats
+        for station, row in final.iterrows():
+            self._stats[str(station)] = StationStats(
+                min_value=row['min'],
+                max_value=row['max'],
+                sum_value=row['sum'],
+                count=int(row['count']),
+            )
 
     def render_sorted(self) -> dict[str, str]:
         """
@@ -106,8 +142,7 @@ class PandasMeasurementsAggregator:
             - порахувати mean через StationStats.mean();
             - сформувати рядок "min_value/mean/max_value".
         """
-        # TODO: implement solution
-        ...
+        return {station: f'{s.min_value}/{s.mean()}/{s.max_value}' for station, s in sorted(self._stats.items())}
 
 
 def main():
