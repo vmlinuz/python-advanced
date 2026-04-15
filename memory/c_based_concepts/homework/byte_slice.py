@@ -81,8 +81,20 @@ class ByteSlice:
 
         # Обмежуємо межі довжиною буфера
         buf_len = len(self._buffer)
-        self._start: int = max(0, min(start, buf_len))
-        self._end: int = max(self._start, min(buf_len, end if end is not None else buf_len))
+
+        normalized_start = max(
+            0,
+            min(start + buf_len if start < 0 else start, buf_len),
+        )
+
+        if end is None:
+            raw_end = buf_len
+        else:
+            raw_end = end + buf_len if end < 0 else end
+
+        normalized_end = max(0, min(raw_end, buf_len))
+        self._start: int = normalized_start
+        self._end: int = max(self._start, normalized_end)
 
     def __len__(self) -> int:
         """
@@ -107,17 +119,19 @@ class ByteSlice:
         if isinstance(item, int):
             # Підтримка негативних індексів
             length = len(self)
+            original_item = item
             if item < 0:
                 item += length
             if item < 0 or item >= length:
-                raise IndexError(f'ByteSlice index {item} out of range for length {length}')
+                raise IndexError(f'ByteSlice index {original_item} out of range for length {length}')
             # Читаємо один байт за абсолютним зміщенням у буфері
             return self._buffer[self._start + item]
 
         if isinstance(item, slice):
             # indices() коректно обробляє None, негативні значення та крок
-            start, stop, _step = item.indices(len(self))
-            # Перераховуємо у абсолютні координати буфера
+            start, stop, step = item.indices(len(self))
+            if step != 1:
+                raise ValueError(f'ByteSlice does not support step != 1 (got step={step})')
             return ByteSlice(self._buffer, self._start + start, self._start + stop)
 
         raise TypeError(f'ByteSlice indices must be integers or slices, not {type(item).__name__}')
