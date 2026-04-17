@@ -169,5 +169,6 @@ class ByteSlice:
         """
         # Обмежуємо превʼю, щоб repr не був завеликим
         preview_end = min(self._start + 20, self._end)
-        preview = bytes(self._buffer[self._start : preview_end])
+        preview_slice = ByteSlice(self._buffer, self._start, preview_end)
+        preview = preview_slice.to_bytes()
         return f'ByteSlice(len={len(self)}, start={self._start}, preview={preview!r})'
