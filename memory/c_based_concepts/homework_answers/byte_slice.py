@@ -34,7 +34,7 @@ class ByteSlice:
         if isinstance(item, int):
             if item < 0:
                 item += len(self)
-            if not (0 <= item < len(self)):
+            if not 0 <= item < len(self):
                 raise IndexError('ByteSlice index out of range')
             return self._buffer[self._start + item]
 

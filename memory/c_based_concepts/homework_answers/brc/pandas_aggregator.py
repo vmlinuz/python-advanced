@@ -70,6 +70,6 @@ class PandasMeasurementsAggregator:
 
     def render_sorted(self) -> dict[str, str]:
         return {
-            station: (f'{station_stats.min_value:.1f}/{station_stats.mean():.1f}/{station_stats.max_value:.1f}')
+            station: f'{station_stats.min_value:.1f}/{station_stats.mean():.1f}/{station_stats.max_value:.1f}'
             for station, station_stats in sorted(self._stats.items())
         }
