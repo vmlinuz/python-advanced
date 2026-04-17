@@ -126,7 +126,9 @@ class DaskMeasurementsAggregator:
             - сформувати рядок "min_value/mean/max_value".
         """
         return {
-            station: f'{s.min_value:.1f}/{s.mean():.1f}/{s.max_value:.1f}' for station, s in sorted(self._stats.items())
+            station: f'{s.min_value:.1f}/{s.mean():.1f}/{s.max_value:.1f}'
+            for station, s in sorted(self._stats.items())
+            if s.count > 0
         }
 
 
