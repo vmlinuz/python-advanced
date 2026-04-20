@@ -40,6 +40,34 @@
 """
 
 
-def top_users(file_path: str, top_n: int = 5):
-    # TODO: implement solution
-    ...
+def top_users(file_path: str, top_n: int = 5) -> list[tuple[str, float]]:
+    import heapq
+
+    # Словник для акумуляції сум по user_id
+    totals: dict[str, float] = {}
+
+    # Стрімінгове читання файлу рядок за рядком
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            fields = line.split(',')
+
+            # Пропускаємо пошкоджені рядки (очікуємо рівно 4 поля)
+            if len(fields) != 4:
+                continue
+
+            try:
+                user_id = fields[1]
+                value = float(fields[3])
+            except (ValueError, IndexError):
+                # Пропускаємо рядки з нечисловим value
+                continue
+
+            # Акумулюємо суму для кожного користувача
+            totals[user_id] = totals.get(user_id, 0.0) + value
+
+    # Ефективний вибір top-N через heapq (O(n log k) замість O(n log n))
+    return heapq.nlargest(top_n, totals.items(), key=lambda x: x[1])
