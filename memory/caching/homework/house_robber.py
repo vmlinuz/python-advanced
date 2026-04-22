@@ -21,28 +21,59 @@
     системах з обмеженнями по пам’яті.
 """
 
+from functools import lru_cache
 from typing import Iterable
 
 
 class HouseRobberMemoized:
     """House Robber - рекурсія + мемоізація (Top-Down Dynamic Programming)."""
 
-    def rob(self, nums: Iterable[int]) -> int:
-        # TODO: implement solution
-        ...
+    @staticmethod
+    def rob(nums: Iterable[int]) -> int:
+        houses = tuple(nums)  # потрібен hashable тип для lru_cache
+
+        @lru_cache(maxsize=None)
+        def dp(i: int) -> int:
+            """Максимальний прибуток починаючи з індексу i."""
+            if i >= len(houses):
+                return 0
+            # або грабуємо поточний і пропускаємо наступний,
+            # або пропускаємо поточний
+            return max(houses[i] + dp(i + 2), dp(i + 1))
+
+        return dp(0)
 
 
 class HouseRobberTabulated:
     """House Robber - табуляція (Bottom-Up Dynamic Programming)."""
 
-    def rob(self, nums: Iterable[int]) -> int:
-        # TODO: implement solution
-        ...
+    @staticmethod
+    def rob(nums: Iterable[int]) -> int:
+        houses = list(nums)
+        n = len(houses)
+        if not n:
+            return 0
+        if n == 1:
+            return houses[0]
+
+        # dp[i] — максимальний прибуток для перших i+1 будинків
+        dp = [0] * n
+        dp[0] = houses[0]
+        dp[1] = max(houses[0], houses[1])
+
+        for i in range(2, n):
+            dp[i] = max(dp[i - 1], houses[i] + dp[i - 2])
+
+        return dp[-1]
 
 
 class HouseRobberOptimized:
     """House Robber - оптимізована табуляція з O(1) памʼяттю. Опціонально"""
 
-    def rob(self, nums: Iterable[int]) -> int:
-        # TODO: implement solution
-        ...
+    @staticmethod
+    def rob(nums: Iterable[int]) -> int:
+        # prev2 — dp[i-2], prev1 — dp[i-1]
+        prev2 = prev1 = 0
+        for house in nums:
+            prev2, prev1 = prev1, max(prev1, house + prev2)
+        return prev1
