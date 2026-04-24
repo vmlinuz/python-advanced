@@ -57,7 +57,7 @@ class _Node:
 class LRUCache:
     def __init__(self, capacity: int):
         if capacity <= 0:
-            raise ValueError(f"capacity must be a positive integer, got {capacity}")
+            raise ValueError(f'capacity must be a positive integer, got {capacity}')
         self._capacity = capacity
         # Словник: ключ → вузол, забезпечує O(1) доступ
         self._cache: dict[int, _Node] = {}
